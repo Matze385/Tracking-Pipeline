@@ -1,0 +1,12 @@
+current folder:
+    config.ini file for setting all hyperparameters
+    rawdata: hdf5 file in format [img, x, y, 1] with arbitrary filename, filename must be specified in config.ini
+
+
+folder Autocontext:
+    labels of four frames in hdf5 file with name labels.h5 and format [img, x, y, 0] shape (4, x_dim, y_dim, 0)
+
+folder DPM:
+
+folder MultiHypoTracking:
+
