@@ -1,0 +1,14 @@
+current folder:
+    -config_train.ini and config_pred.ini file for setting all hyperparameters
+    -rawdata: hdf5 file in format [img, x, y, 1] with arbitrary filename, filename must be specified in config.ini
+    -labelCounting.py: script that counts numbers of labeled pxl of different classes and deduces the maximal number of possible trainingspxl for the autocontext, useage: labelCounting.py --config config_train.ini
+
+
+folder Autocontext:
+    -labels of four frames in hdf5 file with filename and dataset specified in config_train.ini and format [0, x, y, 0] shape (1, x_dim, y_dim, 0)
+    -if rawdata corresponding to labelmaps (trainimgs) not cropped out of rawdata (specified in config_train.ini): 4 frames in hdf5 with filename and dataset specified in config_train.ini and format [0, x, y, 0] shape (1, x_dim, y_dim, 0)
+
+folder DPM:
+
+folder MultiHypoTracking:
+

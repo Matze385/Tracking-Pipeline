@@ -4,10 +4,13 @@ import h5py
 import configargparse
 
 """
-take every i th image of rawdata 
+take every i th image of rawdata and cropp out specified spatial region
 """
 if __name__  == '__main__':
+    #fixed parameter
+    path_new_rawdata = '../Preprocessing/'
     #default parameters used without config file
+    use_config = True
     filename_raw ='RawData.h5'
     dataset_raw = 'data'
     time_interval=False #if time cropping is True take only images with idx between i_img_begin and i_img_end 
@@ -25,37 +28,38 @@ if __name__  == '__main__':
     
     #config arg parse
     p = configargparse.ArgParser()#(default_config_files=['config.ini'])
-    p.add('-c', '--my-config', is_config_file=True, help='config file path')
-    p.add('--preprocessing-filename_rawdata', default=filename_raw, type=str, help='filename of rawdata for preprocessing')
-    p.add('--preprocessing-datasetname_rawdata', default=dataset_raw, type=str, help='filename of dataset of rawdata for preprocessing')
-    p.add('--preprocessing-time_interval', default=time_interval, action='store_true', help='if true only img with idx between idx_begin and idx_end are chosen')
+    p.add('-c', '--config', is_config_file=True, help='config file path')
+    p.add('--global-filename_rawdata', default=filename_raw, type=str, help='filename of rawdata for preprocessing')
+    p.add('--global-datasetname_rawdata', default=dataset_raw, type=str, help='filename of dataset of rawdata for preprocessing')
+    p.add('--preprocessing-time_interval', default=False, action='store_true', help='if true only img with idx between idx_begin and idx_end are chosen')
     p.add('--preprocessing-idx_begin', default=idx_begin, type=int, help='start idx for cropping in time')
     p.add('--preprocessing-idx_end', default=idx_end, type=int, help='end idx for cropping in time')
     p.add('--preprocessing-every_i_img_rawdata', default=every_i_img, type=int, help='selecting every i th image for tracking (preprocessing)')
     p.add('--preprocessing-filename_new_rawdata', default=filename_new, type=str, help='filename of rawdata after preprocessing')
     p.add('--preprocessing-datasetname_new_rawdata', default=dataset_new, type=str, help='filename of dataset for rawdata after preprocessing')
-    p.add('--preprocessing-spatial_cropping', default=spatial_cropping, action='store_true', help='if true spatial cropping according to [x_start,x_end) [y_start,y_end)')
+    p.add('--preprocessing-spatial_cropping', default=False, action='store_true', help='if true spatial cropping according to [x_start,x_end) [y_start,y_end)')
     p.add('--preprocessing-x_start', default=x_start, type=int, help='limits of interval for spatial cropping [x_start, x_end)')
     p.add('--preprocessing-x_end', default=x_end, type=int, help='limits of interval for spatial cropping [x_start, x_end)')
     p.add('--preprocessing-y_start', default=y_start, type=int, help='limits of interval for spatial cropping [y_start, y_end)')
     p.add('--preprocessing-y_end', default=y_end, type=int, help='limits of interval for spatial cropping [y_start, y_end)')
     
-    options = p.parse_args()
+    options, unknown = p.parse_known_args()
  
-    #parse parameters 
-    filename_raw = options.preprocessing_filename_rawdata
-    dataset_raw = options.preprocessing_datasetname_rawdata
-    time_interval = options.preprocessing_time_interval
-    idx_begin = options.preprocessing_idx_begin
-    idx_end = options.preprocessing_idx_end
-    every_i_img = options.preprocessing_every_i_img_rawdata
-    spatial_cropping = options.preprocessing_spatial_cropping
-    x_start = options.preprocessing_x_start
-    x_end = options.preprocessing_x_end
-    y_start = options.preprocessing_y_start
-    y_end = options.preprocessing_y_end
-    filename_new = options.preprocessing_filename_new_rawdata
-    dataset_new = options.preprocessing_datasetname_new_rawdata
+    #parse parameters
+    if use_config == True: 
+        filename_raw = options.global_filename_rawdata
+        dataset_raw = options.global_datasetname_rawdata
+        time_interval = options.preprocessing_time_interval
+        idx_begin = options.preprocessing_idx_begin
+        idx_end = options.preprocessing_idx_end
+        every_i_img = options.preprocessing_every_i_img_rawdata
+        spatial_cropping = options.preprocessing_spatial_cropping
+        x_start = options.preprocessing_x_start
+        x_end = options.preprocessing_x_end
+        y_start = options.preprocessing_y_start
+        y_end = options.preprocessing_y_end
+        filename_new = options.preprocessing_filename_new_rawdata
+        dataset_new = options.preprocessing_datasetname_new_rawdata
 
     #main program
     rawdata_f = h5py.File(filename_raw,'r')
@@ -92,7 +96,8 @@ if __name__  == '__main__':
         y_end = y_dim
         
         
-    newdata_f = h5py.File(filename_new,'w')
+    filepath_name_new = path_new_rawdata + filename_new
+    newdata_f = h5py.File(filepath_name_new,'w')
     newdata_f.create_dataset(dataset_new, (new_n_img, new_x_dim, new_y_dim, shape[3]) , dtype = rawdata_f[dataset_raw].dtype)
     
     print('cropping rawdata')

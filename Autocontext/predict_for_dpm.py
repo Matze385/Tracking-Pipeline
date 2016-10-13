@@ -95,7 +95,7 @@ labelsF.close()
 
 #labels_all: [img, x, y, 0] needed for test sets with pixels out of complete interesting region
 labelsAllF = h5py.File('labels_1700_29_1200_800.h5','r')
-labels_all = labelsAllF['exported_data'][:,:,:,0]
+labels_all = labelsAllF['data'][:,:,:,0]
 labelsAllF.close()
 
 print("read in finished")

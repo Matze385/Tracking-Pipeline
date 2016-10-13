@@ -1,2 +1,0 @@
-folder Autocontext:
-    labels of four frames in hdf5 file with name labels.h5 and format [img, x, y, 0] shape (4, x_dim, y_dim, 0)
