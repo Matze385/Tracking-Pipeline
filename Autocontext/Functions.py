@@ -127,7 +127,7 @@ def train_sets_stages(stage_i, n_stages, labels, coord, feature_filename, testin
     #trainingsset without rotation
     #print(start_img,start_idx, end_img, end_idxa)
     if rot == False:
-        print('rot=False')
+        #print('rot=False')
         X_train = np.zeros((n_labels_train_stage, n_features))
         y_train = np.zeros((n_labels_train_stage))
         for i in np.arange(start_img, end_img+1):
@@ -184,7 +184,7 @@ def train_sets_stages(stage_i, n_stages, labels, coord, feature_filename, testin
                 #consider that trainingsimages are not consecutive because of testset
                 if i>=testindex:
                     i += 1 
-                print('start_img:',i)
+                #print('start_img:',i)
                 if start_img==end_img:
                     x = coord[i, 0, start_idx:end_idx]
                     y = coord[i, 1, start_idx:end_idx]
@@ -206,7 +206,7 @@ def train_sets_stages(stage_i, n_stages, labels, coord, feature_filename, testin
             elif i==end_img:
                 if i>=testindex:
                     i += 1 
-                print('end_img:',i)
+                #print('end_img:',i)
                 x = coord[i, 0, :end_idx]
                 y = coord[i, 1, :end_idx] 
                 selected_map = np.zeros((xDim, yDim), dtype=np.uint8)  
@@ -218,7 +218,7 @@ def train_sets_stages(stage_i, n_stages, labels, coord, feature_filename, testin
             else:
                 if i>=testindex:
                     i += 1
-                print('img:',i)
+                #print('img:',i)
                 x = coord[i, 0, :]
                 y = coord[i, 1, :] 
                 selected_map = np.zeros((xDim, yDim), dtype=np.uint8)  
@@ -328,7 +328,7 @@ def train_sets_stages_several_files(stage_i, n_stages, labels, coord, feature_fi
     #trainingsset without rotation
     #print(start_img,start_idx, end_img, end_idxa)
     if rot == False:
-        print('rot=False')
+        #print('rot=False')
         X_train = np.zeros((n_labels_train_stage, n_features))
         y_train = np.zeros((n_labels_train_stage))
         for i in np.arange(start_img, end_img+1):
@@ -337,7 +337,7 @@ def train_sets_stages_several_files(stage_i, n_stages, labels, coord, feature_fi
                 #consider that trainingsimages are not consecutive because of testset
                 if i>=testindex:
                     i += 1 
-                print('start_img:',i)
+                #print('start_img:',i)
                 if start_img==end_img:
                     x = coord[i, 0, start_idx:end_idx]
                     y = coord[i, 1, start_idx:end_idx]
@@ -361,7 +361,7 @@ def train_sets_stages_several_files(stage_i, n_stages, labels, coord, feature_fi
             elif i==end_img:
                 if i>=testindex:
                     i += 1 
-                print('end_img:',i)
+                #print('end_img:',i)
                 x = coord[i, 0, :end_idx]
                 y = coord[i, 1, :end_idx] 
                 insert_idx = 0
@@ -377,7 +377,7 @@ def train_sets_stages_several_files(stage_i, n_stages, labels, coord, feature_fi
                 j = i
                 if i>=testindex:
                     j = i+1
-                print(j) 
+                #print(j) 
                 x = coord[j, 0, :]
                 y = coord[j, 1, :] 
                 start_range = n_labels_per_fold-start_idx+(i-start_img-1)*n_labels_per_fold
@@ -581,27 +581,28 @@ def img_split(i_stage, n_stages, testindex, n_folds, labels, rot=False, n_rot=1)
 """
 create file with probability maps of RF
 """
-def create_probability_maps(i_stage, clf, n_images, images, n_classes, rot=False):
+def create_probability_maps(i_stage, clf, n_images, images, n_classes, relative_path, rot=False):
 #create file with name: outputfilename: 'probability_map_stage_'+str(i_stage)+'.h5' with dataset 'data' containing probability maps of first n_images in array [img, x,y,c]
 #uses hdf5 file selected_std_feat_rawdata_rotated_stage_0.h5 with dataset 'data' containing array of shape [xDim,yDim,n_folds*n_rot,n_feat]
 #i_stage: stage of RF for calculating prob maps for naming of output file 
 #clf: RF of i_stage
 #n_images: number of images probability maps are computed on (=n_folds or n_folds*n_rot) 
 #n_classes: number of different classes t
+#relative_path: relative path to files read in and written
 #rot: true means data augmentation through rotations
 
     #select augmented data if rot=true
     filename_rawdata = ''
     if rot==True:
-        filename_rawdata = 'selected_std_feat_rawdata_rotated_stage_0.h5'
+        filename_rawdata = relative_path + 'selected_std_feat_rawdata_rotated_stage_0.h5'
     else:
-        filename_rawdata = 'selected_std_feat_rawdata_stage_0.h5'
+        filename_rawdata = relative_path + 'selected_std_feat_rawdata_stage_0.h5'
     f = h5py.File(filename_rawdata,'r')
     xDim = f['data'].shape[0]
     yDim = f['data'].shape[1]
     n_features = f['data'].shape[3]
     std_features = np.zeros((xDim, yDim, n_features), dtype=np.float32)
-    filename = 'probability_map_stage_'+str(i_stage)+'.h5'
+    filename = relative_path + 'probability_map_stage_'+str(i_stage)+'.h5'
     w = h5py.File(filename, 'w')
     w.create_dataset('data', (n_images, xDim, yDim, n_classes), dtype=np.float32, compression='gzip')
     if i_stage==0:
@@ -612,7 +613,7 @@ def create_probability_maps(i_stage, clf, n_images, images, n_classes, rot=False
             prob2D = prob1D.reshape((xDim, yDim,n_classes ))
             w['data'][img,:,:,:] = prob2D  
     else:
-        addf = h5py.File('selected_std_feat_prob_stage_'+str(i_stage)+'.h5','r')
+        addf = h5py.File(relative_path + 'selected_std_feat_prob_stage_'+str(i_stage)+'.h5','r')
         n_feat_add = addf['data'].shape[3]
         add_features = np.zeros((xDim, yDim, n_feat_add), dtype=np.float32)
         for img in images:
@@ -681,12 +682,13 @@ def calc_selected_std_features_one_img(data,sigmasGaussian, sigmasLoG=[],sigmasG
 """
 predict image with index img with given clf_list
 """
-def predict_one_image(img, clf, n_classes, sigmasGaussian_prob, sigmasLoG_prob=[],sigmasGGM_prob=[],sigmasSTE_prob=[],sigmasHoGE_prob=[]):
+def predict_one_image(img, clf, n_classes, relative_path, sigmasGaussian_prob, sigmasLoG_prob=[],sigmasGGM_prob=[],sigmasSTE_prob=[],sigmasHoGE_prob=[]):
 #returns y2D_pred array of shape [xDim,yDim] of type np.int32
 #img: index for frame that is predicted
+#relative_path: relative path to data read in and write
 #clf: list of clf for different stages
 
-    f = h5py.File('selected_std_feat_rawdata_stage_0.h5','r')
+    f = h5py.File(relative_path + 'selected_std_feat_rawdata_stage_0.h5','r')
     #parameters
     xDim = f['data'].shape[0]
     yDim = f['data'].shape[1]
@@ -818,7 +820,7 @@ def predict_hard_one_image_new_data(img, rawdata_filename, clf, n_classes, sigma
 """
 predict hard and soft segmentation image out of given rawdata with index img with given clf_list, but does not work
 """
-def predict_one_image_new_data(img, rawdata_filename, clf, n_classes, sigmasGaussian, sigmasLoG=[],sigmasGGM=[],sigmasSTE=[],sigmasHoGE=[] ,sigmasGaussian_prob=[], sigmasLoG_prob=[],sigmasGGM_prob=[],sigmasSTE_prob=[],sigmasHoGE_prob=[]):
+def predict_one_image_new_data(img, rawdata_filename, clf, n_classes, sigmasGaussian, dataset='data', sigmasLoG=[],sigmasGGM=[],sigmasSTE=[],sigmasHoGE=[] ,sigmasGaussian_prob=[], sigmasLoG_prob=[],sigmasGGM_prob=[],sigmasSTE_prob=[],sigmasHoGE_prob=[]):
 #returns y2D_pred array of shape [xDim,yDim] of type np.int32
 #img: index for frame that is predicted
 #rawdata_filename: name of hdf5 file for prediction, format [t,x,y,c]
@@ -827,11 +829,11 @@ def predict_one_image_new_data(img, rawdata_filename, clf, n_classes, sigmasGaus
     #calculate all features of all sigmas
     sigmas = [0.3, 1.0, 1.6,  3.5, 5.0, 10.0]
     rawdataF = h5py.File(rawdata_filename, 'r') 
-    xDim = rawdataF['data'].shape[1]
-    yDim = rawdataF['data'].shape[2]
-    cDim = rawdataF['data'].shape[3]
+    xDim = rawdataF[dataset].shape[1]
+    yDim = rawdataF[dataset].shape[2]
+    cDim = rawdataF[dataset].shape[3]
     data = np.zeros((xDim, yDim, cDim), dtype=np.float32)
-    data = rawdataF['data'][img,:,:,:]
+    data = rawdataF[dataset][img,:,:,:]
     rawdataF.close()
     #rawdata = rawdata.swapaxes(0,2).swapaxes(0,1)
     rawdata = vg.taggedView(data.astype(np.float32), "xyc")

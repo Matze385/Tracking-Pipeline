@@ -9,6 +9,9 @@ take every i th image of rawdata and cropp out specified spatial region
 if __name__  == '__main__':
     #fixed parameter
     path_new_rawdata = '../Preprocessing/'
+    filename_new = 'rawdata.h5'
+    dataset_new = 'data'
+
     #default parameters used without config file
     use_config = True
     filename_raw ='RawData.h5'
@@ -17,8 +20,6 @@ if __name__  == '__main__':
     idx_begin = 200
     idx_end = 400
     every_i_img = 4 #must be >=4
-    filename_new = 'rawdata.h5'
-    dataset_new = 'data'
     spatial_cropping=False #if spatial_cropping=True cropp certain area out specified below [x_start,x_end), [y_start, y_end)
     x_start = 0 
     x_end = 10 
@@ -35,8 +36,6 @@ if __name__  == '__main__':
     p.add('--preprocessing-idx_begin', default=idx_begin, type=int, help='start idx for cropping in time')
     p.add('--preprocessing-idx_end', default=idx_end, type=int, help='end idx for cropping in time')
     p.add('--preprocessing-every_i_img_rawdata', default=every_i_img, type=int, help='selecting every i th image for tracking (preprocessing)')
-    p.add('--preprocessing-filename_new_rawdata', default=filename_new, type=str, help='filename of rawdata after preprocessing')
-    p.add('--preprocessing-datasetname_new_rawdata', default=dataset_new, type=str, help='filename of dataset for rawdata after preprocessing')
     p.add('--preprocessing-spatial_cropping', default=False, action='store_true', help='if true spatial cropping according to [x_start,x_end) [y_start,y_end)')
     p.add('--preprocessing-x_start', default=x_start, type=int, help='limits of interval for spatial cropping [x_start, x_end)')
     p.add('--preprocessing-x_end', default=x_end, type=int, help='limits of interval for spatial cropping [x_start, x_end)')
@@ -58,8 +57,6 @@ if __name__  == '__main__':
         x_end = options.preprocessing_x_end
         y_start = options.preprocessing_y_start
         y_end = options.preprocessing_y_end
-        filename_new = options.preprocessing_filename_new_rawdata
-        dataset_new = options.preprocessing_datasetname_new_rawdata
 
     #main program
     rawdata_f = h5py.File(filename_raw,'r')

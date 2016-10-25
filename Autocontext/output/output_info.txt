@@ -1,0 +1,1 @@
+if in config_train.ini/config_pred.ini the entry 'autocontext-save_many_class_probmaps' is given the autocontext prediction before merging are saved here

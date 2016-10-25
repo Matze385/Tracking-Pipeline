@@ -1,14 +1,17 @@
-current folder:
+current directory:
     -config_train.ini and config_pred.ini file for setting all hyperparameters
-    -rawdata: hdf5 file in format [img, x, y, 1] with arbitrary filename, filename must be specified in config.ini
+    -rawdata: hdf5 file in format [img, x, y, 1] with arbitrary filename, filename must be specified in config_train.ini and config_pred.ini
     -labelCounting.py: script that counts numbers of labeled pxl of different classes and deduces the maximal number of possible trainingspxl for the autocontext, useage: labelCounting.py --config config_train.ini
 
 
-folder Autocontext:
-    -labels of four frames in hdf5 file with filename and dataset specified in config_train.ini and format [0, x, y, 0] shape (1, x_dim, y_dim, 0)
-    -if rawdata corresponding to labelmaps (trainimgs) not cropped out of rawdata (specified in config_train.ini): 4 frames in hdf5 with filename and dataset specified in config_train.ini and format [0, x, y, 0] shape (1, x_dim, y_dim, 0)
+directory Autocontext:
+    -labels of four frames in hdf5 file with filename and dataset specified in config_train.ini and format [0, x, y, 0] shape (1, x_dim, y_dim, 1)
+    -if rawdata corresponding to labelmaps not cropped out of rawdata (specified in config_train.ini with flag autocontext-cropp_trainimg): 4 frames in hdf5 with filename and dataset specified in config_train.ini and format [0, x, y, 0] shape (1, x_dim, y_dim, 0)
 
-folder DPM:
+directory DPM:
+    -if flag dpm-cropp_neg_ex is set (true) put .txt with indices of images in rawdata that are negative example, name of .txt must be specified in config_train.ini
+    -if flag dpm-cropp_neg_ex is not set (false) put hdf5 files of single negative example rawdata in format [0, x, y, 0] shape (1, x_dim, y_dim, 1) in directory DPM/neg_ex 
+    -directory Bounding_Boxes: put saved bounding boxes in .xml file here, for each bounding box one xml file, filename must contain index of image in rawdata
 
-folder MultiHypoTracking:
+directory MultiHypoTracking:
 

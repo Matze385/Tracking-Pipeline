@@ -85,7 +85,6 @@ def calc_std_features(data_filename, output_filename, n_images, sigmas):
     for t in np.arange(n_images):
         data = np.zeros((xDim, yDim, cDim), dtype=np.float32)
         data = rawdataF['data'][t,:,:,:]
-        print data.shape
         #rawdata = rawdata.swapaxes(0,2).swapaxes(0,1)
         rawdata = vg.taggedView(data.astype(np.float32), "xyc")
         features = np.zeros((xDim, yDim,cDim, n_feat_types, len(sigmas)), dtype=np.float32)
@@ -110,9 +109,10 @@ def calc_std_features(data_filename, output_filename, n_images, sigmas):
 """
 select features out of all standard features out of given hdf5 file and write results again in hdf5 file 
 """
-def select_std_features(i_stage, output_filename_extension, all_features_filename,  sigmasGaussian, sigmasLoG=[], sigmasGGM=[], sigmasSTE=[], sigmasHoGE=[]):
+def select_std_features(i_stage, output_filename_extension, output_relative_path, all_features_filename,  sigmasGaussian, sigmasLoG=[], sigmasGGM=[], sigmasSTE=[], sigmasHoGE=[]):
 #i_stage: int number of current stage, for outout file name
-#output_filename_extension: eg rawdata or prob output filename: 'selected_std_feat_'+output_filename_extension+'_stage_'+str(i_stage)+ '.h5' 
+#output_filename_extension: eg rawdata or prob output filename: 'selected_std_feat_'+output_filename_extension+'_stage_'+str(i_stage)+ '.h5'
+#output_relative_path: '../Autocontext/' relative path where file should be stored 
 #all_features_filename: string of name of all std feature hdf5 file containing feature array [x,y,t,c,f,sigmas], f: all features, c=classes
 #sigmas: selected sigmas, must be out of [0.3,1.0,1.6,3.5,5.0,10.0]
 #produce array with selected feature array [x,y,t,sel_f] sel_f: selected features
@@ -146,7 +146,7 @@ def select_std_features(i_stage, output_filename_extension, all_features_filenam
 
      
     #create hdf5 file with selected features
-    filename = 'selected_std_feat_'+output_filename_extension+'_stage_'+str(i_stage)+ '.h5'
+    filename = output_relative_path + 'selected_std_feat_'+output_filename_extension+'_stage_'+str(i_stage)+ '.h5'
     f = h5py.File(filename,'w')
     f.create_dataset('data', (xDim,yDim,tDim,n_feat), dtype=np.float32, compression='gzip')
     #select features
