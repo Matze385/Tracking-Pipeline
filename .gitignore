@@ -3,3 +3,5 @@
 *.jpeg
 *.xml
 *sqlite3
+*.pkl
+*.json
