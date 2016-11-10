@@ -14,10 +14,10 @@ if __name__ == '__main__':
     
     #default parameters when no command line parameter is used
     N_CLASS = 4                             #number of classes
-    filename_labelmap_1 = 'Labels_1.h5'
-    filename_labelmap_2 = 'Labels_2.h5'
-    filename_labelmap_3 = 'Labels_3.h5'
-    filename_labelmap_4 = 'Labels_4.h5'
+    filename_labelmap_1 = 'Labels_0.h5'
+    filename_labelmap_2 = 'Labels_33.h5'
+    filename_labelmap_3 = 'Labels_66.h5'
+    filename_labelmap_4 = 'Labels_97.h5'
     labelmap_dataset = 'data'
 
     #config arg parse

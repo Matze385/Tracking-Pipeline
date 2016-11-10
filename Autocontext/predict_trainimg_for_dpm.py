@@ -268,8 +268,8 @@ if __name__ == '__main__':
                 y2D_pred_soft, y2D_pred_hard = predict_one_image_new_data(0, relative_path_neg_ex + file ,clf, N_CLASSES, sigmasGaussian, neg_ex_dataset, sigmasLoG, sigmasGGM, sigmasSTE, sigmasHoGE, sigmasGaussian_prob, sigmasLoG_prob, sigmasGGM_prob, sigmasSTE_prob, sigmasHoGE_prob)
                 y2D_pred_soft_merged = merge(y2D_pred_soft, mergers)
                 #write prob map
-                filename_soft = filename_seg_soft+ '_' + file + '.h5'
-                filename_hard = filename_seg_hard + '_' + file + '.h5'
+                filename_soft = filename_seg_soft+ '_' + file 
+                filename_hard = filename_seg_hard + '_' + file 
                 prob_file = h5py.File(relative_path_train_neg_soft + filename_soft, 'w' )
                 prob_file.create_dataset('data', data=np.swapaxes(y2D_pred_soft_merged,0,1)) #take only probmaps of foreground classes 
                 prob_file.close()

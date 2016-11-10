@@ -3,7 +3,7 @@
 #include <sys/time.h>
 #include <ctype.h>
 
-#define CCV_NUMBER_CHANNELS (2)
+#define CCV_NUMBER_CHANNELS (3)
 
 static unsigned int get_current_time(void)
 {

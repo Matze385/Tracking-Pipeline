@@ -37,6 +37,7 @@ if __name__=='__main__':
     check_call(["python", os.path.abspath("../Autocontext/features.py")])
     #train autocontext
     check_call(["python", os.path.abspath("../Autocontext/train_for_dpm.py"), "--config", 'config_train.ini'])
+    
     """
     """
     DPM

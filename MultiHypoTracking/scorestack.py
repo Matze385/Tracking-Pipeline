@@ -209,6 +209,8 @@ class ScoreStack:
 if __name__ == '__main__':
     #paramaters set by config file
     use_config = True
+    use_LoG=False
+    sigma_LoG=1.
     x_center = 510/2
     y_center = 514/2
     n_rot = 8
@@ -226,28 +228,33 @@ if __name__ == '__main__':
     p.add('--global-x_center', default=x_center, type=int, help='coordinates of center for rotations')    
     p.add('--global-y_center', default=y_center, type=int, help='coordinates of center for rotations') 
     p.add('--global-arrow_orientation', default=False, action='store_true', help='if true: arrow orientation exist, if wrong: only axis orientation exist')    
+    p.add('--mht-use_LoG', default=False, action='store_true', help='if true: Laplacian of Gaussian is calculated on Scoremap for blob detection')    
+    p.add('--mht-sigma_LoG', default=False, type=float, help='sigma for Laplacian of Gaussian')    
+
     options, unknown = p.parse_known_args()
            
     #parse parameter
     if use_config==True:
+        use_LoG = options.mht_use_LoG
+        sigma_LoG = options.mht_sigma_LoG
         n_rot = options.global_n_rot
         x_center = int(options.global_x_center/2)
         y_center = int(options.global_y_center/2)
         arrow_orientation = options.global_arrow_orientation
     print arrow_orientation
 
-    stack_26 = ScoreStack(26, n_rot, x_center=x_center, y_center=y_center, arrow_orientation=arrow_orientation ,path_scoremaps=path_scoremaps, LoG=False, sigma_LoG=1.)
+    stack_26 = ScoreStack(26, n_rot, x_center=x_center, y_center=y_center, arrow_orientation=arrow_orientation ,path_scoremaps=path_scoremaps, LoG=use_LoG, sigma_LoG=sigma_LoG)
     stack_26.write_stack(relative_path='../MultiHypoTracking/stacks/')
-    y_start = 47
-    x_start = 39
-    y_end = 71
-    x_end = 64
+    x_start = 66
+    y_start = 52
+    x_end = 79
+    y_end = 61
     i_rot = 2
     #hypos = stack_2989.extract_hypotheses(threshold_abs=0.35)
     #print hypos[10,:]
     #for i in np.arange(stack_2942.stack_height)
     #    print len(maxima[i])
-    #stack_18.show(x_start, y_start, x_end, y_end , i_rot, stepsize_xy=5., zlim=(-1.5,15.1), stepsize_z=2., stepsize_bar=5., save_region=True)
+    #stack_1.show(x_start, y_start, x_end, y_end , i_rot, stepsize_xy=5., zlim=(-1.5,10.1), stepsize_z=2., stepsize_bar=2., save_region=True)
     #stack_2942.write_stack() 
 
 

@@ -23,7 +23,7 @@
 #endif
 
 #define CCV_DPM_WINDOW_SIZE (2)
-#define CCV_NUMBER_CHANNELS (2) //head, upper body, lower body, wings
+#define CCV_NUMBER_CHANNELS (3) //head, upper body, lower body, wings
 
 const ccv_dpm_param_t ccv_dpm_default_params = {
 	.interval = 8,

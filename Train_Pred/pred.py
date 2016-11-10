@@ -17,19 +17,19 @@ if __name__=='__main__':
     """
     #print options.config_file
     #cropp rawdata
-    check_call(["python", os.path.abspath("../Preprocessing/cropp_rawdata.py"), "--config", 'config_pred.ini'])
+    #check_call(["python", os.path.abspath("../Preprocessing/cropp_rawdata.py"), "--config", 'config_pred.ini'])
     
     """
     Autocontext
     """
     #predict probmaps of cropped rawdata
-    check_call(["python", os.path.abspath("../Autocontext/predict_for_dpm.py"), "--config", 'config_pred.ini'])
+    #check_call(["python", os.path.abspath("../Autocontext/predict_for_dpm.py"), "--config", 'config_pred.ini'])
 
     """
     DPM
     """
     #calc scoremaps out of probmaps
-    check_call([os.path.abspath("../DPM/bin/dpmdetect"), os.path.abspath("../DPM/samples/pred/predfile.txt"), os.path.abspath("../DPM/samples/model/model"), os.path.abspath("../DPM/samples/pred/probmap")])
+    #check_call([os.path.abspath("../DPM/bin/dpmdetect"), os.path.abspath("../DPM/samples/pred/predfile.txt"), os.path.abspath("../DPM/samples/model/model"), os.path.abspath("../DPM/samples/pred/probmap")])
 
     """
     MultiHypoTracking

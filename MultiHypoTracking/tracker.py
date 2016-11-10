@@ -94,12 +94,14 @@ class Tracker:
         self.graph_complete = False
         #attributes for initialization of first and last frame
         self.neutral_feature=[[0.],[0.]] 
-        self.detection_reward = -9.*10**3.
-        self.no_detection_reward = -9.*10**3
+        self.detection_reward = -9.*10**5.
+        self.no_detection_reward = -9.*10**5.
         #current id for enumerate hypothesis
         self.current_id = 1 
         #ids of true objects in first frame  
         self.start_ids = []
+        #ids of true objects in last frame  
+        self.end_ids = []
         #number of tracks in total
         self.n_tracks = 0
         #dictionaryfor tracking results
@@ -334,6 +336,7 @@ class Tracker:
             #true_detections
             if idx in true_det_idc: 
                 self.graph.add_seg_hypo(self.current_id, self.true_detection(), x=int(detection[0]), y=int(detection[1]), alpha=int(detection[2]), t=int(self.last_t), disappearanceFeatures=self.neutral_feature) 
+                self.end_ids.append(self.current_id)
             #wrong_detections
             else:
                 self.graph.add_seg_hypo(self.current_id, self.false_detection(), x=int(detection[0]), y=int(detection[1]), alpha=int(detection[2]), t=int(self.last_t) ) #appearance_feature    
@@ -419,14 +422,14 @@ class Tracker:
     #weights: list [transition, detection, appearance, disappearance]
     #angle_weights: weight different angles in transition features [w_0, w_45, w_90, w_135, w_180], 
     #len(angle_weights) corresponds to the number of different intervals between 0 and 180 degree 
-    def track(self, true_det_first_t, true_det_last_t, weights, conflict_radius, angle_weights, print_model=False, print_result=False):
+    def track(self, true_det_first_t, true_det_last_t, weights, conflict_radius, angle_weights, print_model=False, print_result=False, print_path=''):
         self.build_graph(true_det_first_t, true_det_last_t, weights, angle_weights, conflict_radius)
         result = mht.track(self.graph.model, self.graph.weights)
         self.track_result = result
         if print_model == True:
-            self.print_json('model', self.graph.model)
+            self.print_json(print_path + 'model', self.graph.model)
         if print_result == True:
-            self.print_json('ground_truth', result)
+            self.print_json(print_path + 'ground_truth', result)
 
     def true_detection(self):
         return [[-self.detection_reward],[self.detection_reward]]
@@ -559,11 +562,14 @@ class Tracker:
             ax = fig.add_subplot(1,1,1)
             ax.imshow(img, cmap=matplotlib.cm.Greys_r)
             #extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-            
+            colors = ['r', 'b', 'g', 'c']
+            color_n = 0
             for start_id in track_start_ids:
+                color_n +=1
+                color = colors[color_n%4]
                 track_ids = self.get_track(start_id)
                 coordinates = self.get_coordinates(track_ids)  
-                ax.scatter(rescale_factor*coordinates[0][0],rescale_factor*coordinates[0][1], marker='x', color='r', s=0.5, alpha=0.7)
+                ax.scatter(rescale_factor*coordinates[0][0],rescale_factor*coordinates[0][1], marker='x', color=color, s=0.5, alpha=0.7)
                 #for coordinate in coordinates:
                    # print( coordinate[0])  
                 #print('length of coordinates', len(coordinates))
@@ -577,18 +583,18 @@ class Tracker:
                 for step in np.arange(track_length):
                     line_x.append(rescale_factor * coordinates[step][0])
                     line_y.append(rescale_factor * coordinates[step][1])
-                ax.plot(line_x, line_y, linewidth=1., color='r', alpha=0.6)
+                ax.plot(line_x, line_y, linewidth=1., color=color, alpha=0.6)
                 arrow_x_start = line_x[-1]
                 arrow_y_start = line_y[-1]
                 arrow_delta_x = np.sin(np.pi/180.*coordinates[track_length-1][2])*length_arrow
                 arrow_delta_y = -np.cos(np.pi/180.*coordinates[track_length-1][2])*length_arrow
                 if not len(line_x) == 0:
                     if self.arrow_orientation==True:
-                        ax.arrow(arrow_x_start, arrow_y_start, arrow_delta_y , arrow_delta_x , head_width=4, head_length=8, fc='r', ec='r', alpha=0.7, width=0.8)
+                        ax.arrow(arrow_x_start, arrow_y_start, arrow_delta_y , arrow_delta_x , head_width=4, head_length=8, fc=color, ec=color, alpha=0.7, width=0.8)
                     else:
-                        ax.arrow(arrow_x_start, arrow_y_start, arrow_delta_y/2. , arrow_delta_x/2. , head_width=4, head_length=8, fc='r', ec='r', alpha=0.7, width=0.8)
+                        ax.arrow(arrow_x_start, arrow_y_start, arrow_delta_y/2. , arrow_delta_x/2. , head_width=4, head_length=8, fc=color, ec=color, alpha=0.7, width=0.8)
                 if self.arrow_orientation==False:
-                    ax.arrow(arrow_x_start, arrow_y_start, -arrow_delta_y/2. , -arrow_delta_x/2. , head_width=4, head_length=8, fc='r', ec='r', alpha=0.7, width=0.8)
+                    ax.arrow(arrow_x_start, arrow_y_start, -arrow_delta_y/2. , -arrow_delta_x/2. , head_width=4, head_length=8, fc=color, ec=color, alpha=0.7, width=0.8)
                     
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
@@ -623,6 +629,7 @@ if __name__ == "__main__":
     
     
     #fixed parameters
+    relative_path_multi_hypo_tracking = '../MultiHypoTracking/'
     relative_path_cropped_rawdata = '../Preprocessing/'
     filename_cropped_rawdata = 'rawdata.h5'
     dataset_cropped_rawdata = 'data'
@@ -649,6 +656,13 @@ if __name__ == "__main__":
     angle_weights = [0., 20., 135., 180., 180.]
     start_idx = 0
     n_idx = 51
+    x_start = 1184.
+    y_start = 480.
+    mht_number_objects = 2
+    #automatic start_idc search
+    centers_start = np.array([[(1267.-x_start)/2, (576.-y_start)/2], [(1336.-x_start)/2, (601.-y_start)/2] ])
+    centers_end = np.array([[(1271.-x_start)/2, (571.-y_start)/2], [(1324.-x_start)/2, (564.-y_start)/2] ])
+
     
     #derived parameters
     weights = [weight_trans_move, weight_trans_angle, weight_det, 1., 1. ] #[trans_move, trans_angle, detection, appearance, disappearance ]
@@ -656,6 +670,8 @@ if __name__ == "__main__":
     #configargparse
     p = configargparse.ArgParser()
     p.add('-c', '--config', is_config_file=True, help='config file path')
+    p.add('--preprocessing-x_start', default=-1, type=int, help='boundaries for spatial cropping') 
+    p.add('--preprocessing-y_start', default=-1, type=int, help='boundaries for spatial cropping') 
     p.add('--mht-use_LoG', default=False, action='store_true', help='if true: Laplacian of Gaussian is calculated on Scoremap for blob detection')    
     p.add('--mht-sigma_LoG', default=False, type=float, help='sigma for Laplacian of Gaussian')    
     p.add('--global-arrow_orientation', default=False, action='store_true', help='if true: arrow orientation exist, if wrong: only axis orientation exist')    
@@ -685,7 +701,44 @@ if __name__ == "__main__":
     p.add('--mht-angle_weight_13', default=-1, type=float, help='energies for change in orientation')    
     p.add('--mht-angle_weight_14', default=-1, type=float, help='energies for change in orientation')    
     p.add('--mht-angle_weight_15', default=-1, type=float, help='energies for change in orientation')    
-    p.add('--mht-angle_weight_16', default=-1, type=float, help='energies for change in orientation')    
+    p.add('--mht-angle_weight_16', default=-1, type=float, help='energies for change in orientation') 
+
+    p.add('--mht-number_objects', default=-1, type=int, help='number of objects in this cluster') 
+       
+    p.add('--mht-centers_start_x1', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y1', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x2', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y2', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x3', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y3', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x4', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y4', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x5', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y5', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x6', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y6', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x7', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y7', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_x8', default=-1, type=float, help='center of coordinates in start frame')    
+    p.add('--mht-centers_start_y8', default=-1, type=float, help='center of coordinates in start frame')    
+
+    p.add('--mht-centers_end_x1', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y1', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x2', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y2', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x3', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y3', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x4', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y4', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x5', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y5', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x6', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y6', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x7', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y7', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_x8', default=-1, type=float, help='center of coordinates in end frame')    
+    p.add('--mht-centers_end_y8', default=-1, type=float, help='center of coordinates in end frame')    
+
     p.add('--preprocessing-idx_begin', default=0, type=int, help='start idx for cropping in time')
     p.add('--preprocessing-idx_end', default=1, type=int, help='end idx for cropping in time')
     p.add('--preprocessing-every_i_img_rawdata', default=1, type=int, help='selecting every i th image for tracking (preprocessing)')
@@ -715,41 +768,90 @@ if __name__ == "__main__":
         weight_trans_move = options.mht_weight_trans_move
         weight_trans_angle = options.mht_weight_trans_angle
         weight_det = options.mht_weight_det
-        
+                
         weights = [weight_trans_move, weight_trans_angle, weight_det, 1., 1. ] #[trans_move, trans_angle, detection, appearance, disappearance ]
         angle_weights = []
-        if options.mht_angle_weight_1>0:
+        if options.mht_angle_weight_1>=0:
             angle_weights.append(options.mht_angle_weight_1)
-        if options.mht_angle_weight_2>0:
+        if options.mht_angle_weight_2>=0:
             angle_weights.append(options.mht_angle_weight_2)
-        if options.mht_angle_weight_3>0:
+        if options.mht_angle_weight_3>=0:
             angle_weights.append(options.mht_angle_weight_3)
-        if options.mht_angle_weight_4>0:
+        if options.mht_angle_weight_4>=0:
             angle_weights.append(options.mht_angle_weight_4)
-        if options.mht_angle_weight_5>0:
+        if options.mht_angle_weight_5>=0:
             angle_weights.append(options.mht_angle_weight_5)
-        if options.mht_angle_weight_6>0:
+        if options.mht_angle_weight_6>=0:
             angle_weights.append(options.mht_angle_weight_6)
-        if options.mht_angle_weight_7>0:
+        if options.mht_angle_weight_7>=0:
             angle_weights.append(options.mht_angle_weight_7)
-        if options.mht_angle_weight_8>0:
+        if options.mht_angle_weight_8>=0:
             angle_weights.append(options.mht_angle_weight_8)
-        if options.mht_angle_weight_9>0:
+        if options.mht_angle_weight_9>=0:
             angle_weights.append(options.mht_angle_weight_9)
-        if options.mht_angle_weight_10>0:
+        if options.mht_angle_weight_10>=0:
             angle_weights.append(options.mht_angle_weight_10)
-        if options.mht_angle_weight_11>0:
+        if options.mht_angle_weight_11>=0:
             angle_weights.append(options.mht_angle_weight_11)
-        if options.mht_angle_weight_12>0:
+        if options.mht_angle_weight_12>=0:
             angle_weights.append(options.mht_angle_weight_12)
-        if options.mht_angle_weight_13>0:
+        if options.mht_angle_weight_13>=0:
             angle_weights.append(options.mht_angle_weight_13)
-        if options.mht_angle_weight_14>0:
+        if options.mht_angle_weight_14>=0:
             angle_weights.append(options.mht_angle_weight_14)
-        if options.mht_angle_weight_15>0:
+        if options.mht_angle_weight_15>=0:
             angle_weights.append(options.mht_angle_weight_15)
-        if options.mht_angle_weight_16>0:
+        if options.mht_angle_weight_16>=0:
             angle_weights.append(options.mht_angle_weight_16)
+
+        x_start = options.preprocessing_x_start
+        y_start = options.preprocessing_y_start
+        number_objects = options.mht_number_objects
+        centers_start = np.zeros((options.mht_number_objects, 2), dtype=float)
+        centers_end = np.zeros((options.mht_number_objects, 2), dtype=float)
+        if number_objects>=1:
+            centers_start[0,0] = (options.mht_centers_start_x1 - x_start)/2
+            centers_start[0,1] = (options.mht_centers_start_y1 - y_start)/2
+            centers_end[0,0] = (options.mht_centers_end_x1 - x_start)/2
+            centers_end[0,1] = (options.mht_centers_end_y1 - y_start)/2
+        if number_objects>=2:
+            centers_start[1,0] = (options.mht_centers_start_x2 - x_start)/2
+            centers_start[1,1] = (options.mht_centers_start_y2 - y_start)/2
+            centers_end[1,0] = (options.mht_centers_end_x2 - x_start)/2
+            centers_end[1,1] = (options.mht_centers_end_y2 - y_start)/2
+        if number_objects>=3:
+            centers_start[2,0] = (options.mht_centers_start_x3 - x_start)/2
+            centers_start[2,1] = (options.mht_centers_start_y3 - y_start)/2
+            centers_end[2,0] = (options.mht_centers_end_x3 - x_start)/2
+            centers_end[2,1] = (options.mht_centers_end_y3 - y_start)/2
+        if number_objects>=4:
+            centers_start[3,0] = (options.mht_centers_start_x4 - x_start)/2
+            centers_start[3,1] = (options.mht_centers_start_y4 - y_start)/2
+            centers_end[3,0] = (options.mht_centers_end_x4 - x_start)/2
+            centers_end[3,1] = (options.mht_centers_end_y4 - y_start)/2
+        if number_objects>=5:
+            centers_start[4,0] = (options.mht_centers_start_x5 - x_start)/2
+            centers_start[4,1] = (options.mht_centers_start_y5 - y_start)/2
+            centers_end[4,0] = (options.mht_centers_end_x5 - x_start)/2
+            centers_end[4,1] = (options.mht_centers_end_y5 - y_start)/2
+        if number_objects>=6:
+            centers_start[5,0] = (options.mht_centers_start_x6 - x_start)/2
+            centers_start[5,1] = (options.mht_centers_start_y6 - y_start)/2
+            centers_end[5,0] = (options.mht_centers_end_x6 - x_start)/2
+            centers_end[5,1] = (options.mht_centers_end_y6 - y_start)/2
+        if number_objects>=7:
+            centers_start[6,0] = (options.mht_centers_start_x7 - x_start)/2
+            centers_start[6,1] = (options.mht_centers_start_y7 - y_start)/2
+            centers_end[6,0] = (options.mht_centers_end_x7 - x_start)/2
+            centers_end[6,1] = (options.mht_centers_end_y7 - y_start)/2
+        if number_objects>=8:
+            centers_start[7,0] = (options.mht_centers_start_x8 - x_start)/2
+            centers_start[7,1] = (options.mht_centers_start_y8 - y_start)/2
+            centers_end[7,0] = (options.mht_centers_end_x8 - x_start)/2
+            centers_end[7,1] = (options.mht_centers_end_y8 - y_start)/2
+
+
+
 
 
     """
@@ -759,7 +861,7 @@ if __name__ == "__main__":
     hypotheses = Hypotheses()
 
     for idx in np.arange(start_idx, start_idx + n_idx):
-        stack = ScoreStack(idx, n_rot, x_center=x_center, y_center=y_center, arrow_orientation=arrow_orientation, path_scoremaps=path_scoremaps, LoG=use_LoG, sigma_LoG=1.)
+        stack = ScoreStack(idx, n_rot, x_center=x_center, y_center=y_center, arrow_orientation=arrow_orientation, path_scoremaps=path_scoremaps, LoG=use_LoG, sigma_LoG=sigma_LoG)
         hypotheses.add_frame(idx, stack.extract_hypotheses(threshold_abs=threshold_abs))
     
     """
@@ -768,16 +870,14 @@ if __name__ == "__main__":
     
     tracker = Tracker(hypotheses, threshold_abs, max_move_per_frame=max_move_per_frame, optimizerEpGap=energy_gap_graphical_model, arrow_orientation=arrow_orientation)
     
-    x_start = 551.
-    y_start = 234.
-    #automatic start_idc search
-    centers_start = np.array([[(637.-x_start)/2, (331.-y_start)/2], [(666.-x_start)/2, (318.-y_start)/2], [(666.-x_start)/2, (375.-y_start)/2] ])
-    centers_end = np.array([[(682.-x_start)/2, (312.-y_start)/2], [(652.-x_start)/2, (396.-y_start)/2], [(853.-x_start)/2, (417.-y_start)/2]])
-        
+            
+    
     true_det_first_t = tracker.find_hypo_idc_auto(start_idx, centers_start, radius_ini)   
     true_det_last_t = tracker.find_hypo_idc_auto(start_idx + n_idx-1, centers_end, radius_ini)
     #put all energies on one scale
-    tracker.track(true_det_first_t, true_det_last_t, weights, conflict_radius, angle_weights, print_model=True, print_result=True)
+    tracker.track(true_det_first_t, true_det_last_t, weights, conflict_radius, angle_weights, print_model=True, print_result=True, print_path=relative_path_multi_hypo_tracking)
+    print tracker.end_ids
+    #tracker.hypotheses[69][1][0]
     tracker.print_status()
     tracker.draw_tracks('../MultiHypoTracking/images_with_tracks/', length_arrow=15, all_tracks=True)
     
