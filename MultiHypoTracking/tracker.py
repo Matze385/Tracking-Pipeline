@@ -11,6 +11,11 @@ from graph_as_dict import GraphDict
 
 import configargparse
 
+import sys
+sys.path.append('.')
+
+from grid_search import*
+
 """
 save Hypotheses (t,x,y,alpha,score) in datastructure of following format: [[t1, several_detections_t1], [t2, several_detections_t2], ...]
 with t1<t2<t3,... and detections of timestep ti several_detections_ti = [samples, attributes] attributes: x,y,alpha, score
@@ -342,7 +347,7 @@ class Tracker:
                 self.graph.add_seg_hypo(self.current_id, self.false_detection(), x=int(detection[0]), y=int(detection[1]), alpha=int(detection[2]), t=int(self.last_t) ) #appearance_feature    
             self.current_id += 1       
 
-    #add intermediate segmentation hypothesis (i.e. detections in frames that are not first and last one)
+    #add intermediate segmentation hypotheses (i.e. detections in frames that are not first and last one)
     def add_intermediate_det_hypos(self):
         time_interval = self.last_t - self.first_t
         #iterate over indices of hypotheses according to intermediat timesteps
@@ -358,7 +363,7 @@ class Tracker:
                 self.current_id += 1
     
 
-    #add transition hypothesis, each detection hypothesis in t is connected with all detection hypos in t+1 when the distance is smaller than self.max_move_per_frame
+    #add transition hypotheses, each detection hypothesis in t is connected with all detection hypos in t+1 when the distance is smaller than self.max_move_per_frame
     def add_trans_hypos(self, angle_weights):
         time_interval = self.last_t - self.first_t
         #iterate over all timeframes except the last one and build links
@@ -457,6 +462,8 @@ class Tracker:
             track_ids.append(dest_id)
             current_src = dest_id
         return track_ids
+
+            
 
     #get sequence of coordinates array: [x,y,alpha, score]
     #track: list of ids, result of get_track
@@ -623,7 +630,43 @@ def find_hypo_idx(hypos_new, true_det_old, hypos_old):
                 break
     return true_det_new
     
-       
+
+#true_det_first_t: indices of selected hypotheses in first frame for initialization
+#synchron with true_det_last_t first i.e. first element in both lists belong to same object
+#grid_idx: idx of chosen weights used in tracker
+#tracker: tracker which contains information about tracks
+#add_to_hdf5: if result should be added to hdf5 file 
+#add_counter: if true counter of dataset is incremented
+#return res: array with two columns: first column start ids in correct order, second column end_ids in corresponding order according to ground truth, third column end_ids predicted by tracker
+def ids_ground_truth(true_det_first_t, true_det_last_t, grid_idx, tracker, add_to_hdf5=True, add_counter=True):
+    n_tracks = len(true_det_first_t)
+    res = np.zeros((n_tracks, 3))
+    assert(len(true_det_first_t)==len(true_det_last_t))
+    if ( (len(tracker.start_ids) == len(tracker.end_ids)) and (len(true_det_first_t)== len(tracker.start_ids))):
+        true_det_first_t_sorted = sorted(true_det_first_t)
+        for i, idx in enumerate(true_det_first_t):
+            pos = true_det_first_t_sorted.index(idx)
+            res[i, 0] = tracker.start_ids[pos]
+        true_det_last_t_sorted = sorted(true_det_last_t)
+        for i, idx in enumerate(true_det_last_t):
+            pos = true_det_last_t_sorted.index(idx)
+            res[i, 1] = tracker.end_ids[pos]
+        for i, start_id in enumerate(res[:,0]):
+            end_id_pred = tracker.get_track(start_id)[-1]
+            res[i, 2] = end_id_pred
+        if add_to_hdf5:
+            f_h5 = h5py.File('clusterEval.h5', 'r+')
+            dataset_name_n = 'nCluster' + str(n_tracks)
+            dataset_name = 'cluster' + str(n_tracks)
+            n_cluster = f_h5[dataset_name_n][0]
+            if add_counter==True:
+                f_h5[dataset_name_n][0] = n_cluster + 1
+            f_h5[dataset_name][grid_idx, n_cluster, :, :] = res[:,:]
+            f_h5.close()
+    return res
+   
+
+
 
 if __name__ == "__main__":
     
@@ -868,17 +911,30 @@ if __name__ == "__main__":
     #perform tracking
     """
     
-    tracker = Tracker(hypotheses, threshold_abs, max_move_per_frame=max_move_per_frame, optimizerEpGap=energy_gap_graphical_model, arrow_orientation=arrow_orientation)
-    
-            
-    
-    true_det_first_t = tracker.find_hypo_idc_auto(start_idx, centers_start, radius_ini)   
-    true_det_last_t = tracker.find_hypo_idc_auto(start_idx + n_idx-1, centers_end, radius_ini)
     #put all energies on one scale
-    tracker.track(true_det_first_t, true_det_last_t, weights, conflict_radius, angle_weights, print_model=True, print_result=True, print_path=relative_path_multi_hypo_tracking)
-    print tracker.end_ids
-    #tracker.hypotheses[69][1][0]
-    tracker.print_status()
-    tracker.draw_tracks('../MultiHypoTracking/images_with_tracks/', length_arrow=15, all_tracks=True)
-    
+    #if not all hypothesis for initialization are found evaluation not possible
+    #helper class for grid search
+    grid_search_helper = grid_search_helper()
+    #range of indices that should be used for weights in lookup table defined in class grid_search_helper 
+    grid_idx_range = grid_search_helper.get_idx_range()
+    for grid_idx in grid_idx_range:
+        tracker = Tracker(hypotheses, threshold_abs, max_move_per_frame=max_move_per_frame, optimizerEpGap=energy_gap_graphical_model, arrow_orientation=arrow_orientation)
+        true_det_first_t = tracker.find_hypo_idc_auto(start_idx, centers_start, radius_ini)   
+        true_det_last_t = tracker.find_hypo_idc_auto(start_idx + n_idx-1, centers_end, radius_ini)
+        if len(true_det_first_t) == len(true_det_last_t):
+            weight_trans_move = grid_search_helper.get_weight_trans_move(grid_idx)
+            weight_trans_angle = grid_search_helper.get_weight_trans_angle(grid_idx)
+            weight_det = grid_search_helper.get_weight_det(grid_idx)
+            #overwrite weights according to grid search
+            weights = [weight_trans_move, weight_trans_angle, weight_det, 1., 1.]
+            tracker.track(true_det_first_t, true_det_last_t, weights, conflict_radius, angle_weights, print_model=True, print_result=True, print_path=relative_path_multi_hypo_tracking)
+            print tracker.end_ids
+            #tracker.hypotheses[69][1][0]
+            tracker.print_status()
+            #write id matching matrix in hdf5 file 
+            add_counter = (grid_idx==0)
+            result = ids_ground_truth(true_det_first_t, true_det_last_t, grid_idx, tracker, add_to_hdf5=True, add_counter=add_counter)
+            print result
+            #tracker.draw_tracks('../MultiHypoTracking/images_with_tracks/', length_arrow=15, all_tracks=True)
+
     
